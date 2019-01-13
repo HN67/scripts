@@ -7,6 +7,10 @@ import math
 def toRad(angle):
     return angle / 360 * 2 * math.pi
 
+def toDegree(angle):
+    """Converts radians to degrees"""
+    return angle / 2 / math.pi * 360
+
 
 class Label:
 
@@ -52,13 +56,16 @@ class LiftSimulator:
         self.centerX = size / 2
         self.centerY = size / 2
 
+        # Determine height
+        self.height = self.calculateHeight()
+
         # Create initial drawing
         self.drawing = self.display.create_line(self.centerX, self.centerY,
 
                                            self.centerX - self.distance*math.sin(toRad(self.angle)), 
                                            self.centerY - self.distance*math.cos(toRad(self.angle)),
 
-                                           self.centerX, self.centerY - self.calculateHeight(),
+                                           self.centerX, self.centerY - self.height,
                                            self.centerX, self.centerY)
 
         # Create initial height label
@@ -66,12 +73,14 @@ class LiftSimulator:
         #                          round(self.calculateHeight(), 2))
 
         self.text = self.display.create_text(self.centerX + 5, 
-                                             self.centerY - self.calculateHeight()/2, 
-                                             text = round(self.calculateHeight(), 2), anchor = tk.W)
+                                             self.centerY - self.height/2, 
+                                             text = round(self.height, 2), anchor = tk.W)
 
         # Bind events
         self.root.bind("<Up>", self.decreaseAngle)
         self.root.bind("<Down>", self.increaseAngle)
+        self.root.bind("<Left>", self.decreaseHeight)
+        self.root.bind("<Right>", self.increaseHeight)
 
         # Start the tk mainloop
         tk.mainloop()
@@ -79,11 +88,25 @@ class LiftSimulator:
     def increaseAngle(self, event):
         """Increases the angle and redraws"""
         self.angle += 1
+        self.height = self.calculateHeight()
         self.draw()
 
     def decreaseAngle(self, event):
         """Decreases the angle and redraws"""
         self.angle -= 1
+        self.height = self.calculateHeight()
+        self.draw()
+
+    def increaseHeight(self, event):
+        """Increases height and redraws"""
+        self.height += 1
+        self.angle = self.calculateAngle()
+        self.draw()
+
+    def decreaseHeight(self, event):
+        """Decreases height and redraws"""
+        self.height -= 1
+        self.angle = self.calculateAngle()
         self.draw()
 
     def calculateHeight(self):
@@ -95,12 +118,20 @@ class LiftSimulator:
                          )
                + self.distance*math.cos(toRad(self.angle))
                )
+
+    def calculateAngle(self):
+        """Calculate angle based on chain, distance, and height"""
+        """
+        c^2 = d^2 + h^2 - 2dhcosC
+        2dhcosC = d^2 + h^2 - c^2
+        cosC = (d^2 + h^2 - c^2)/(2dh)
+        """
+        return toDegree(math.acos( (self.distance**2 + self.height**2 - self.chain**2)
+                          /(2 * self.distance * self.height) )
+        )
     
     def draw(self):
         """Redraws the triangle"""
-
-        # Calculate height
-        height = self.calculateHeight()
 
         # Redraw the triangle position
         self.display.coords(self.drawing, self.centerX, self.centerY,
@@ -108,18 +139,18 @@ class LiftSimulator:
                                            self.centerX - self.distance*math.sin(toRad(self.angle)), 
                                            self.centerY - self.distance*math.cos(toRad(self.angle)),
 
-                                           self.centerX, self.centerY - height,
+                                           self.centerX, self.centerY - self.height,
                                            self.centerX, self.centerY)
 
         # Redraw the label position
         self.display.coords(self.text, self.centerX + 5, 
-                                       self.centerY - height/2,)
+                                       self.centerY - self.height/2,)
 
         # Reset the label content
-        self.display.itemconfig(self.text, text = round(height, 2))
+        self.display.itemconfig(self.text, text = round(self.height, 2))
 
 
-prog = LiftSimulator(120, 200, 90)
+prog = LiftSimulator(50, 100, 90)
 
 
 
