@@ -12,6 +12,16 @@ class Resource:
     name: str # Maybe create an enum of some sort instead of strings?
     amount: int # Int makes sense, though maybe float?
 
+
+# System data class (temperature and contents)
+# Should it be hardcoded or made up of 'Resource's?
+@dataclass
+class System:
+
+    temperature: int #or float?
+
+
+
 # Should a list of resources be a) a list, b) a set <- most likely, or c) a custom class?
 # One Issue with set is the neccesity to check for keys all the time
 # A class could creat unneccesary rigor if not done properly
@@ -19,9 +29,9 @@ class Resource:
 # Tile data holder class
 class Tile:
     
-    def __init__(self, resources: set = None):
+    def __init__(self, systems: set = None):
         
-        self.resources = resources
+        self.systems = systems
 
 # Abstract overhead game data class
 class Game:
