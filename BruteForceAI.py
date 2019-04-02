@@ -3,8 +3,14 @@
 # Author: HN67
 
 # Import native libraries
-import random # For the AI to choose randomly
-import operator # Mostly used to pass `key` callables to iterable manipulation
+# For the AI to choose randomly
+import random
+# For saving and loading AI histories
+import json
+import os
+
+# Set current directory to where this file is located
+os.chdir(os.path.dirname(__file__))
 
 class TTTBoard:
     """Class for holding and manipulating a TicTacToe board"""
@@ -197,4 +203,13 @@ for x in range(50):
         board.reset()
 
     # Pause
-    input(":")
+    #input(":")
+
+# Save the AI histories
+with open("ai1.json", "w") as f:
+    convert = {str(key): list(ai1.history[key]) for key in ai1.history}
+    json.dump(convert, f)
+
+with open("ai2.json", "w") as f:
+    convert = {str(key): list(ai2.history[key]) for key in ai2.history}
+    json.dump(convert, f)
