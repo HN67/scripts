@@ -6,7 +6,7 @@
 # For the AI to choose randomly
 import random
 # For saving and loading AI histories
-import json
+import pickle
 import os
 
 # Set current directory to where this file is located
@@ -175,25 +175,38 @@ board = TTTBoard(3)
 print(board.get_available())
 print(board.tuple_form())
 
-ai1 = TTTAI("x")
-ai2 = TTTAI("o")
+# Load the first AI x, or create new if it doesnt exist
+try:
+  with open("ai1.pickle", "rb") as f:
+    ai1 = pickle.load(f)
+except FileNotFoundError:
+  ai1 = TTTAI("x")
 
-for x in range(1000):
+# Load the second AI o, or create new if it doesnt exist
+try:
+  with open("ai2.pickle", "rb") as f:
+    ai2 = pickle.load(f)
+except FileNotFoundError:
+  ai2 = TTTAI("o")
+
+# Teach the AIs
+def teach(first: TTTAI, second: TTTAI, moves: int=1000):
+
+  for i in range(moves):
 
     # Play and evaluate AI 1
     ai1.play(board)
-    done1 = ai1.evaluate(board)
     #print(board, end="\n\n")
+    done1 = ai1.evaluate(board)
 
-    # Only let 2 go if 1 hasnt won or finished the game somehow
+    # Let player 2 go if game isnt already over
     if not done1:
-        # Play and evaluate AI 2
         ai2.play(board)
-        done2 = ai2.evaluate(board)
         #print(board, end="\n\n") 
-    else:
-        # Give done2 value to prevent null reference error
-        done2 = True
+
+    # Recheck both evaluations
+    done1 = ai1.evaluate(board)
+    done2 = ai2.evaluate(board)
 
     # Reset if game over
     if done1 or done2:
@@ -202,14 +215,46 @@ for x in range(1000):
         ai2.reset()
         board.reset()
 
-    # Pause
-    #input(":")
+      # Pause
+      #input(":")
 
-# Save the AI histories
-with open("ai1.json", "w") as f:
-    convert = {str(key): list(ai1.history[key]) for key in ai1.history}
-    json.dump(convert, f)
+  # Save the AIs
+  with open("ai1.pickle", "wb") as f:
+      pickle.dump(ai1, f)
 
-with open("ai2.json", "w") as f:
-    convert = {str(key): list(ai2.history[key]) for key in ai2.history}
-    json.dump(convert, f)
+  with open("ai2.pickle", "wb") as f:
+      pickle.dump(ai2, f)
+
+# User Interface
+
+# Start the main loop
+userInput = ""
+while True:
+
+    userInput = input("Which AI do you want to check (or enter 'teach' to run a learning session): ")
+    if userInput == "x":
+        ai = ai1
+    elif userInput == "o":
+        ai = ai2
+    elif userInput == "teach":
+        try:
+            amount = int(input("How many moves? "))
+        except ValueError:
+            print("Invalid number")
+            continue
+        teach(ai1, ai2, amount)
+        continue
+    elif userInput == "break":
+        break
+    else:
+        print("Invalid input: Expected ['x', 'o', 'break']")
+        continue
+    
+    userInput = input("Enter a board state to check: ")
+    
+    try:
+        state = (tuple(userInput[:3]), tuple(userInput[3:6]), tuple(userInput[6:9]))
+        print(ai.history[state])
+    except (IndexError, KeyError):
+        print("Invalid input: Expected 9*['x', 'o', ' '] or AI has no knowledge of that board yet")
+        continue
