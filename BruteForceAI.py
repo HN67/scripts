@@ -178,26 +178,26 @@ print(board.tuple_form())
 ai1 = TTTAI("x")
 ai2 = TTTAI("o")
 
-for x in range(50):
+for x in range(1000):
 
     # Play and evaluate AI 1
     ai1.play(board)
     done1 = ai1.evaluate(board)
-    print(board, end="\n\n")
+    #print(board, end="\n\n")
 
     # Only let 2 go if 1 hasnt won or finished the game somehow
     if not done1:
         # Play and evaluate AI 2
         ai2.play(board)
         done2 = ai2.evaluate(board)
-        print(board, end="\n\n") 
+        #print(board, end="\n\n") 
     else:
         # Give done2 value to prevent null reference error
         done2 = True
 
     # Reset if game over
     if done1 or done2:
-        print("VICTORY", board.check_wins())
+        #print("VICTORY", board.check_wins())
         ai1.reset()
         ai2.reset()
         board.reset()
