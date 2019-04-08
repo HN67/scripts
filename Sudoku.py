@@ -200,10 +200,41 @@ def main():
     sudo = Sudoku()
 
     # Populate test board
-    sudo.set_value(3, 3, 5)
-    sudo.set_value(5, 5, 6)
-    sudo.set_value(0, 8, 1)
-    sudo.set_value(8, 0, 7)
+    sudo.set_value(0, 0, 7)
+    sudo.set_value(2, 2, 1)
+
+    sudo.set_value(0, 5, 2)
+    sudo.set_value(1, 4, 9)
+    sudo.set_value(2, 4, 8)
+    sudo.set_value(2, 5, 4)
+
+    sudo.set_value(0, 6, 4)
+    sudo.set_value(0, 8, 8)
+    sudo.set_value(1, 8, 3)
+    sudo.set_value(2, 7, 5)
+
+    sudo.set_value(3, 1, 1)
+    sudo.set_value(4, 2, 5)
+    sudo.set_value(5, 1, 4)
+
+    sudo.set_value(4, 4, 7)
+
+    sudo.set_value(3, 7, 8)
+    sudo.set_value(4, 6, 9)
+    sudo.set_value(5, 7, 7)
+
+    sudo.set_value(6, 1, 9)
+    sudo.set_value(7, 0, 4)
+    sudo.set_value(8, 0, 2)
+    sudo.set_value(8, 2, 3)
+
+    sudo.set_value(6, 3, 7)
+    sudo.set_value(6, 4, 4)
+    sudo.set_value(7, 4, 3)
+    sudo.set_value(8, 3, 5)
+
+    sudo.set_value(6, 6, 2)
+    sudo.set_value(8, 8, 1)
 
     # Show test board
     print(sudo)
@@ -215,6 +246,9 @@ def main():
     print()
     # Show solved board
     print(sudo)
+
+    # Wait for enter before closing
+    input()
 
 if __name__ == "__main__":
     main()
