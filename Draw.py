@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import math
 import typing
+import logging
 
 import pygame
 
@@ -15,7 +16,16 @@ config = {
         "color": pygame.Color("white"),
         "name": "Model",
     },
+    "app": {
+        "tps": 60,
+    },
+    "logging": {
+        "level": logging.WARNING,
+    },
 }
+
+# Set logging level
+logging.getLogger().setLevel(config["logging"]["level"])
 
 Pair = typing.Tuple[float, float]
 
@@ -145,7 +155,7 @@ def radial(length: float, angle: float) -> Point:
     return Point(length * math.cos(angle), length * math.sin(angle))
 
 class Model:
-    """Class representing a mathematical model, designed to be represented on a Panel"""
+    """Abstrac Class representing a mathematical model, designed to be represented on a Panel"""
 
     def update(self):
         """Updates the model to the next stage, if the model is dynamic"""
@@ -153,6 +163,22 @@ class Model:
 
     def visual(self) -> Panel:
         """Returns a Panel containing a visual representation of the Model"""
+        raise NotImplementedError
+
+class Manager:
+    """Abstract Class that gets pygame events and screen and manages a Model on it"""
+
+    def __init__(self, model: Model, screen: pygame.Surface):
+
+        # Reference model and screen for later use
+        self.model = model
+        self.screen = screen
+
+    def update(self, events, keyboard):
+        """Updates the Manager with the given events and keyboard press state
+        The manager should use the events to update the model,
+        and then redraw the updated model
+        """
         raise NotImplementedError
 
 class Stargon(Model):
@@ -178,6 +204,41 @@ class Stargon(Model):
         # Return the panel
         return drawing
 
+class StargonManager(Manager):
+    """Manager Class for the Stargon Model"""
+
+    def update(self, events, keyboard):
+        """UP/DOWN arrowkeys change order, Holding LEFT/RIGHT change size"""
+
+        # Search for UP/DOWN
+        for event in events:
+
+            # Check KEYDOWN events
+            if event.type == pygame.KEYDOWN:
+
+                # Match against Up and Down constants
+                if event.key == pygame.K_UP:
+                    self.model.order += 1
+                elif event.key == pygame.K_DOWN:
+                    self.model.order -= 1
+
+        # Search for held LEFT/RIGHT keys
+        if keyboard[pygame.K_LEFT]:
+            self.model.radius -= 1
+        if keyboard[pygame.K_RIGHT]:
+            self.model.radius += 1
+
+        # Refresh the display
+        image = self.model.visual()
+        # Find blit coordinate to place in the middle
+        # Reference both rects to manipulate them
+        screenRect = self.screen.get_rect()
+        imageRect = image.surface.get_rect()
+        # Center imageRect on screenRect
+        imageRect.center = screenRect.center
+        # Draw the image, which should be centered
+        image.display(self.screen, (imageRect.x, imageRect.y))
+
 def main():
     """Main function to start the script"""
 
@@ -188,27 +249,49 @@ def main():
     screen = pygame.display.set_mode(config["screen"]["dimensions"])
     pygame.display.set_caption(config["screen"]["name"])
 
+    # Create clock
+    clock = pygame.time.Clock()
+
     # Set the background color
     screen.fill(config["screen"]["color"])
 
-    # Create a Stargon Model
-    model = Stargon(200, 9)
-
-    # Visualize and display the model
-    image = model.visual()
-    image.display(screen, (0, 0))
-
-    # Update screen display
-    pygame.display.flip()
+    # Create a Stargon Manager
+    manager = StargonManager(Stargon(200, 9), screen)
 
     # Event loop
     running = True
     while running:
-        for event in pygame.event.get():
+
+        # Retrieve pygame event queue to allow multiple viewings
+        # (since pygame.event.get() will clear the queue whenever used)
+        events = pygame.event.get()
+
+        # Show information around events
+        if events:
+            logging.info(events)
+
+        # Iterate through events on top-level for specific situations
+        # such as QUIT
+        for event in events:
+
             # Allow window closure by ending main while loop
             if event.type == pygame.QUIT:
                 running = False
 
+        # Only continue if program hasnt been terminated
+        if running:
+
+            # Clear the background
+            screen.fill(config["screen"]["color"])
+
+            # Update manager to allow for interactive input
+            manager.update(events, pygame.key.get_pressed())
+
+            # Flip pygame display to actually show changes
+            pygame.display.flip()
+
+            # Limit the speed of ticks
+            clock.tick(config["app"]["tps"])
 
 if __name__ == "__main__":
     main()
