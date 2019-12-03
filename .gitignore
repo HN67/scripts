@@ -1,12 +1,2 @@
-# Ignore pylint config file
-.pylintrc
-
-# Ignore pycache of custom moduels
+# Ignore pycache of custom modules
 __pycache__/
-
-# Ignore build folder and spec file
-build/
-Sudoku.spec
-
-# Ignore pickles for now
-*.pickle
