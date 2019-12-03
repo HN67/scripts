@@ -7,3 +7,6 @@ __pycache__/
 # Ignore build folder and spec file
 build/
 Sudoku.spec
+
+# Ignore pickles for now
+*.pickle
