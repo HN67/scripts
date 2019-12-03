@@ -44,8 +44,12 @@ tps = 60
 # Initiate block group
 blocks = pygame.sprite.Group()
 
+# The length of a full cycle of game logic in ticks (e.g. producing new blocks)
+cycle_length = 60
+
 # Main loop
 running = True
+tick = -1
 while running:
 
     # Dump event queue into reference
@@ -61,9 +65,14 @@ while running:
     # Skips the rest of the loop if the program is quitting
     if running:
 
-        # Create new block
-        blocks.add(Block(pygame.Rect(400, random.randint(0, 39)*10, 10, 10)))
+        # Increment tick
+        tick = (tick + 1) % cycle_length
 
+        # Create new block every 10 ticks
+        if tick % 5 == 0:
+            blocks.add(Block(pygame.Rect(400, random.randint(0, 15)*25, 25, 25)))
+
+        # Update blocks
         blocks.update()
 
         screen.fill((0, 0, 0))
