@@ -44,11 +44,50 @@ class Block(pygame.sprite.Sprite):
         """Moves the block by the given speed"""
         # TODO maybe make blocks deload away from screen or something
 
-class Player(pygame.sprite.Sprite):
-    """Main controllable character of the game"""
+    @property
+    def hitbox(self) -> pygame.Rect:
+        """Allow access of .rect under the name of .hitbox"""
+        return self.rect
 
-    def __init__(self, rect):
-        pass
+class Player(pygame.sprite.Sprite):
+    """Main controllable character of the game
+    Player(image: Surface, hitbox: Rect, keyConfig: dict)
+    keyConfig is a {str: int} dictionary that maps names to keycodes
+    Currently requires "jump", "left", "right" keyConfigs
+    Use Player.keyDictionary to automatically generate a compatible dictionary
+    """
+
+    @classmethod
+    def keyDictionary(cls, jump: int, left: int, right: int) -> typing.Dict[str, int]:
+        """Automatically produces a keyConfig in the format expected by the constructor"""
+        return {"jump": jump, "left": left, "right": right}
+
+    def __init__(self, image: pygame.Surface,
+                 hitbox: pygame.Rect, keyConfig: typing.Dict[str, int]
+                ):
+
+        # Reference image
+        self.image = image
+
+        # Reference hitbox
+        self.hitbox = hitbox
+
+        # Generate rect from hitbox, starting centered on the hitbox
+        self.rect = self.image.get_rect()
+        self.rect.center = self.hitbox.center
+
+        # Reference keyConfig
+        self.keyConfig = keyConfig
+
+    def update(self):
+        """Updates the player"""
+
+        # Align visual rect with actual hitbox
+        self.rect.center = self.hitbox.center
+
+def hitboxCollided(sprite: pygame.sprite.Sprite, other: pygame.sprite.Sprite) -> bool:
+    """Collides sprites based on their .hitbox attribute instead of .rect"""
+    return sprite.hitbox.colliderect(other.hitbox)
 
 # Define viewbox
 class Viewbox:
