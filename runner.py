@@ -8,6 +8,13 @@ import random
 # Import pygame
 import pygame
 
+# Define config
+config = {
+    "windowWidth": 500,
+    "windowHeight": 500,
+    "name": "Runner",
+}
+
 # Define path function that turns a relative path into an absolute path based on file location
 def path(local: str) -> str:
     """Returns the absolute path of local path, based on this file location"""
@@ -34,22 +41,39 @@ class Block(pygame.sprite.Sprite):
 
     def update(self):
         """Moves the block by the given speed"""
-        self.rect.x -= 5
+        # TODO maybe make blocks deload away from screen or something
+# Define viewbox
+class Viewbox:
+    """Represents the view of the game, mainly for displacement"""
 
-        # Delete at edge
-        if self.rect.right <= 0:
-            self.kill()
+    def __init__(self, rect: pygame.Rect):
+
+        # Reference rect
+        self.rect = rect
+
+        # Create surface
+        self.image = pygame.Surface(self.rect.size)
+
+    def render(self, sprites: pygame.sprite.Group) -> None:
+        """Draws the given sprites (as a Group) onto the surface
+        Adjusts position based on viewbox offset
+        """
+        # Access each sprite individually for offsetting
+        for sprite in sprites:
+            # Moves the sprites the opposite direction of viewbox location,
+            # so as the viewbox "moves", the sprites are moved onto it
+            # e.g. viewbox offset: (5, 5) will make a sprite at (5, 5) be drawn at (0, 0)
+            self.image.blit(sprite.image, sprite.rect.move(-self.rect.x, -self.rect.y))
+
+# Create viewbox
+viewbox = Viewbox(pygame.Rect(0, 0, config["windowWidth"], config["windowHeight"]))
 
 # Create clock
 clock = pygame.time.Clock()
 
-# Define viewbox
-viewbox = pygame.Rect(0, 0, 500, 500)
-
 # Setup window
-# TODO should create and use config values
-screen = pygame.display.set_mode(viewbox.size)
-pygame.display.set_caption("Runner")
+screen = pygame.display.set_mode(viewbox.rect.size)
+pygame.display.set_caption(config["name"])
 tps = 60
 
 # Load images
@@ -75,18 +99,37 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+    # Check other sources of input, e.g. the keyboard
+    held_keys = pygame.key.get_pressed()
+
+    # Control the viewbox from out here for now
+    if held_keys[pygame.K_UP]:
+        viewbox.rect.y -= 5
+    if held_keys[pygame.K_DOWN]:
+        viewbox.rect.y += 5
+    if held_keys[pygame.K_LEFT]:
+        viewbox.rect.x -= 5
+    if held_keys[pygame.K_RIGHT]:
+        viewbox.rect.x += 5
+
     # Skips the rest of the loop if the program is quitting
     if running:
 
         # Create new block every other space based on width ticks
-        if tick % 20 == 0:
-            blocks.add(Block((500, random.randint(0, 9)*50), images["block"]))
+        if tick % 200 == 0:
+            blocks.add(Block((random.randint(0, 9)*50, random.randint(0, 9)*50), images["block"]))
 
         # Update blocks
         blocks.update()
 
-        screen.fill((100, 100, 100))
-        blocks.draw(screen)
+        # Refresh the viewbox
+        # Fill over old image
+        viewbox.image.fill((100, 100, 100))
+        # Render the blocks into the viewbox
+        viewbox.render(blocks)
+
+        # Slap the viewbox onto the screen
+        screen.blit(viewbox.image, (0, 0))
 
         # Flip display
         pygame.display.flip()
