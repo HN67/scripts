@@ -12,6 +12,7 @@ import pygame
 config = {
     "windowWidth": 512,
     "windowHeight": 512,
+    "tps": 60,
     "name": "Runner",
     "blockSize": 32,
 }
@@ -121,10 +122,12 @@ clock = pygame.time.Clock()
 # Setup window
 screen = pygame.display.set_mode(viewbox.rect.size)
 pygame.display.set_caption(config["name"])
-tps = 60
+tps = config["tps"]
 
 # Load images
-images = {name: pygame.image.load(path(name+".png")).convert() for name in ("block", "player")}
+images = ("block", "player")
+# Convert loaded surfaces to screen format
+images = {name: pygame.image.load(path(name+".png")).convert() for name in images}
 
 # Initiate block group
 blocks = pygame.sprite.Group()
