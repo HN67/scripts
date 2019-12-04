@@ -41,7 +41,7 @@ class Block(pygame.sprite.Sprite):
         self.rect.y = position[1]
 
     def update(self):
-        """Moves the block by the given speed"""
+        """Updates the block"""
         # TODO maybe make blocks deload away from screen or something
 
     @property
@@ -164,8 +164,12 @@ while running:
         if tick % 200 == 0:
             blocks.add(Block(
                 (
-                    random.randint(0, config["windowWidth"]//config["blockSize"] - 1)*config["blockSize"],
-                    random.randint(0, config["windowHeight"]//config["blockSize"] - 1)*config["blockSize"]
+                    random.randint(
+                        0, config["windowWidth"]//config["blockSize"] - 1
+                    )*config["blockSize"],
+                    random.randint(
+                        0, config["windowHeight"]//config["blockSize"] - 1
+                    )*config["blockSize"]
                 ),
                 images["block"]))
 
