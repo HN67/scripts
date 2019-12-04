@@ -10,9 +10,10 @@ import pygame
 
 # Define config
 config = {
-    "windowWidth": 500,
-    "windowHeight": 500,
+    "windowWidth": 512,
+    "windowHeight": 512,
     "name": "Runner",
+    "blockSize": 32,
 }
 
 # Define path function that turns a relative path into an absolute path based on file location
@@ -42,6 +43,13 @@ class Block(pygame.sprite.Sprite):
     def update(self):
         """Moves the block by the given speed"""
         # TODO maybe make blocks deload away from screen or something
+
+class Player(pygame.sprite.Sprite):
+    """Main controllable character of the game"""
+
+    def __init__(self, rect):
+        pass
+
 # Define viewbox
 class Viewbox:
     """Represents the view of the game, mainly for displacement"""
@@ -77,9 +85,7 @@ pygame.display.set_caption(config["name"])
 tps = 60
 
 # Load images
-images = {
-    "block": pygame.image.load(path("block.png")).convert()
-}
+images = {name: pygame.image.load(path(name+".png")).convert() for name in ("block", "player")}
 
 # Initiate block group
 blocks = pygame.sprite.Group()
@@ -117,7 +123,12 @@ while running:
 
         # Create new block every other space based on width ticks
         if tick % 200 == 0:
-            blocks.add(Block((random.randint(0, 9)*50, random.randint(0, 9)*50), images["block"]))
+            blocks.add(Block(
+                (
+                    random.randint(0, config["windowWidth"]//config["blockSize"] - 1)*config["blockSize"],
+                    random.randint(0, config["windowHeight"]//config["blockSize"] - 1)*config["blockSize"]
+                ),
+                images["block"]))
 
         # Update blocks
         blocks.update()
