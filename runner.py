@@ -1,5 +1,8 @@
 """Sidescrolling runner game"""
 
+# Import future annotations
+from __future__ import annotations
+
 # Import core modules
 import os
 import typing
@@ -22,16 +25,27 @@ def path(local: str) -> str:
     """Returns the absolute path of local path, based on this file location"""
     return os.path.join(os.path.dirname(__file__), local)
 
-# Init pygame
-pygame.init()
+class Solid(pygame.sprite.Sprite):
+    """Abstract solid entity that is guarenteed to have at least a hitbox.
+    Includes collision detection logic
+    """
 
-class Block(pygame.sprite.Sprite):
-    """General block that is run past"""
+    def __init__(self, hitbox: pygame.Rect):
+
+        # Call super to interact with pygame sprite tools
+        super().__init__()
+
+        # Reference hitbox
+        self.hitbox = hitbox
+
+    def collided(self, other: Solid) -> bool:
+        """Checks if the Solid's hitboxes collide"""
+        return self.hitbox.colliderect(other.hitbox)
+
+class Block(Solid):
+    """General block"""
 
     def __init__(self, position: typing.Tuple[int, int], image: pygame.Surface):
-
-        # Call super initator to be able to interact with pygame sprite tools
-        super().__init__()
 
         # Reference image
         self.image = image
@@ -41,16 +55,13 @@ class Block(pygame.sprite.Sprite):
         self.rect.x = position[0]
         self.rect.y = position[1]
 
+        # Initiate as a solid, using image rect
+        super().__init__(self.rect)
+
     def update(self):
         """Updates the block"""
-        # TODO maybe make blocks deload away from screen or something
 
-    @property
-    def hitbox(self) -> pygame.Rect:
-        """Allow access of .rect under the name of .hitbox"""
-        return self.rect
-
-class Player(pygame.sprite.Sprite):
+class Player(Solid):
     """Main controllable character of the game
     Player(image: Surface, hitbox: Rect, keyConfig: dict)
     keyConfig is a {str: int} dictionary that maps names to keycodes
@@ -67,11 +78,11 @@ class Player(pygame.sprite.Sprite):
                  hitbox: pygame.Rect, keyConfig: typing.Dict[str, int]
                 ):
 
+        # Call Solid init
+        super().__init__(hitbox)
+
         # Reference image
         self.image = image
-
-        # Reference hitbox
-        self.hitbox = hitbox
 
         # Generate rect from hitbox, starting centered on the hitbox
         self.rect = self.image.get_rect()
@@ -80,15 +91,99 @@ class Player(pygame.sprite.Sprite):
         # Reference keyConfig
         self.keyConfig = keyConfig
 
-    def update(self):
-        """Updates the player"""
+        # Create movement vector
+        self.speed = pygame.Vector2(0, 0)
+
+    def move(self, displacement: pygame.Vector2, solids: pygame.sprite.Group):
+        """Moves the Player by the given displacement, stopping on collision
+        Will reset respective velocities on collision
+        """
+
+        # Attempt horizontal movement
+        self.hitbox.x += displacement.x
+        # Check for collisions
+        # Get collisions
+        collisions = pygame.sprite.spritecollide(self, solids, False, collided=lambda s, o: s.collided(o))
+        # Resolve collisions if existant
+        if collisions:
+            # Find closest collision
+            # Differentiate based on direction
+            if displacement.x > 0: # Moving right, collides with left edges
+                # Grabs the collision with the lowest left edge
+                collision = min(collisions, key=lambda c: c.hitbox.left)
+                # Snap to edge
+                self.hitbox.right = collision.hitbox.left
+            else: # Moving left, or hypothetically a collision situation without movement
+                # Grabs the collision with the highest right edge
+                collision = max(collisions, key=lambda c: c.hitbox.right)
+                # Snap to edge
+                self.hitbox.left = collision.hitbox.right
+            # Stop movement
+            self.speed.x = 0
+
+        # Note: We evaluate y-displacement dependently after x-displacement for multiple reasons
+        # 1) Im lazy, dont want to handle literal corner case
+        # 2) Allow slipping around corners while jumping/falling, should feel smoother
+
+        # Attempt vertical movement
+        self.hitbox.y += displacement.y
+        # Check for collisions
+        # Get collisions
+        collisions = pygame.sprite.spritecollide(self, solids, False, collided=lambda s, o: s.collided(o))
+        # Resolve collisions if existant
+        if collisions:
+            # Find closest collision
+            # Differentiate based on direction
+            if displacement.y > 0: # Moving down, collides with top edges
+                # Grabs the collision with the lowest top edge
+                collision = min(collisions, key=lambda c: c.hitbox.top)
+                # Snap to edge
+                self.hitbox.bottom = collision.hitbox.top
+            else: # Moving up, or hypothetically a collision situation without movement
+                # Grabs the collision with the highest bottom edge
+                collision = max(collisions, key=lambda c: c.hitbox.bottom)
+                # Snap to edge
+                self.hitbox.top = collision.hitbox.bottom
+            # Stop movement
+            self.speed.y = 0
+
+    def update(self, inputs: typing.Dict):
+        """Updates the player using the given input"""
+
+        # Parse the input
+        # Check for left/right movement presses
+        # Reset to 0 before more sophisticated accel x system
+        # TODO
+        self.speed.x = 0
+        if inputs["keyboard"][self.keyConfig["left"]]:
+            self.speed.x -= 5 # TODO config rhis
+        if inputs["keyboard"][self.keyConfig["right"]]:
+            self.speed.x += 5
+
+        # Check events for keypresses
+        for event in inputs["events"]:
+            # Select keydown events
+            if event.type == pygame.KEYDOWN:
+                # Check for jump key
+                if event.key == self.keyConfig["jump"]:
+                    self.speed.y = -10 # TODO config
+
+        # Apply gravity
+        self.speed.y += 1 # TODO config create a physics config object
+
+        # Move using object method
+        self.move(self.speed, inputs["solids"])
 
         # Align visual rect with actual hitbox
         self.rect.center = self.hitbox.center
 
-def hitboxCollided(sprite: pygame.sprite.Sprite, other: pygame.sprite.Sprite) -> bool:
-    """Collides sprites based on their .hitbox attribute instead of .rect"""
-    return sprite.hitbox.colliderect(other.hitbox)
+
+
+def inputsDictionary(events, keyboard, solids: pygame.sprite.Group = None) -> typing.Dict:
+    """Returns a inputs dictionary in the format expected by Entities
+    solids should be provided to entities performing collisions
+    """
+    return {"events": events, "keyboard": keyboard, "solids": solids}
 
 # Define viewbox
 class Viewbox:
@@ -113,85 +208,109 @@ class Viewbox:
             # e.g. viewbox offset: (5, 5) will make a sprite at (5, 5) be drawn at (0, 0)
             self.image.blit(sprite.image, sprite.rect.move(-self.rect.x, -self.rect.y))
 
-# Create viewbox
-viewbox = Viewbox(pygame.Rect(0, 0, config["windowWidth"], config["windowHeight"]))
 
-# Create clock
-clock = pygame.time.Clock()
+def main():
+    """Main game script"""
 
-# Setup window
-screen = pygame.display.set_mode(viewbox.rect.size)
-pygame.display.set_caption(config["name"])
-tps = config["tps"]
+    # Init pygame
+    pygame.init()
 
-# Load images
-images = ("block", "player")
-# Convert loaded surfaces to screen format
-images = {name: pygame.image.load(path(name+".png")).convert() for name in images}
+    # Create viewbox
+    viewbox = Viewbox(pygame.Rect(0, 0, config["windowWidth"], config["windowHeight"]))
 
-# Initiate block group
-blocks = pygame.sprite.Group()
+    # Create clock
+    clock = pygame.time.Clock()
 
-# Main loop
-running = True
-tick = 0
-while running:
+    # Setup window
+    screen = pygame.display.set_mode(viewbox.rect.size)
+    pygame.display.set_caption(config["name"])
+    tps = config["tps"]
 
-    # Dump event queue into reference
-    events = pygame.event.get()
+    # Load images
+    images = ("block", "player")
+    # Convert loaded surfaces to screen format
+    images = {name: pygame.image.load(path(name+".png")).convert() for name in images}
 
-    # Check for interesting events
-    for event in events:
+    # Create player
+    player = Player(
+        images["player"], images["player"].get_rect(),
+        Player.keyDictionary(pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT)
+    )
 
-        # QUIT event comes from closing the window, etc
-        if event.type == pygame.QUIT:
-            running = False
+    # Initiate block group
+    blocks = pygame.sprite.Group()
 
-    # Check other sources of input, e.g. the keyboard
-    held_keys = pygame.key.get_pressed()
+    # Create block below player
+    blocks.add(Block((0, 100), images["block"]))
 
-    # Control the viewbox from out here for now
-    if held_keys[pygame.K_UP]:
-        viewbox.rect.y -= 5
-    if held_keys[pygame.K_DOWN]:
-        viewbox.rect.y += 5
-    if held_keys[pygame.K_LEFT]:
-        viewbox.rect.x -= 5
-    if held_keys[pygame.K_RIGHT]:
-        viewbox.rect.x += 5
+    # Main loop
+    running = True
+    tick = 0
+    while running:
 
-    # Skips the rest of the loop if the program is quitting
-    if running:
+        # Dump event queue into reference
+        events = pygame.event.get()
 
-        # Create new block every other space based on width ticks
-        if tick % 200 == 0:
-            blocks.add(Block(
-                (
-                    random.randint(
-                        0, config["windowWidth"]//config["blockSize"] - 1
-                    )*config["blockSize"],
-                    random.randint(
-                        0, config["windowHeight"]//config["blockSize"] - 1
-                    )*config["blockSize"]
-                ),
-                images["block"]))
+        # Check for interesting events
+        for event in events:
 
-        # Update blocks
-        blocks.update()
+            # QUIT event comes from closing the window, etc
+            if event.type == pygame.QUIT:
+                running = False
 
-        # Refresh the viewbox
-        # Fill over old image
-        viewbox.image.fill((100, 100, 100))
-        # Render the blocks into the viewbox
-        viewbox.render(blocks)
+        # Check other sources of input, e.g. the keyboard
+        keyboard = pygame.key.get_pressed()
 
-        # Slap the viewbox onto the screen
-        screen.blit(viewbox.image, (0, 0))
+        # Skips the rest of the loop if the program is quitting
+        if running:
 
-        # Flip display
-        pygame.display.flip()
+            # Create input dict
+            inputs = inputsDictionary(events, keyboard, blocks)
 
-        # Increment tick
-        tick = (tick + 1)# % cycle_length
-        # Limit to determined tps
-        clock.tick(tps)
+            # Create new block every other space based on width ticks
+            if tick % 200 == 0:
+                blocks.add(
+                    Block(
+                        (
+                            random.randint(
+                                0, config["windowWidth"]//config["blockSize"] - 1
+                            )*config["blockSize"],
+                            random.randint(
+                                0, config["windowHeight"]//config["blockSize"] - 1
+                            )*config["blockSize"]
+                        ),
+                        images["block"]
+                    )
+                )
+
+            # Update blocks
+            blocks.update()
+
+            # Update player
+            player.update(inputs)
+
+            # Lock viewbox to follow player
+            viewbox.rect.center = player.rect.center
+
+            # Refresh the viewbox
+            # Fill over old image
+            viewbox.image.fill((100, 100, 100))
+            # Render the blocks into the viewbox
+            viewbox.render(blocks)
+            # Render player # TODO make visibles sprite group
+            viewbox.render((player, ))
+
+            # Slap the viewbox onto the screen
+            screen.blit(viewbox.image, (0, 0))
+
+            # Flip display
+            pygame.display.flip()
+
+            # Increment tick
+            tick = (tick + 1)# % cycle_length
+            # Limit to determined tps
+            clock.tick(tps)
+
+# main script pattern
+if __name__ == "__main__":
+    main()
