@@ -9,7 +9,6 @@ public class Guess {
 	public static void main(String[] args) {
 	
 		// Create goal integer
-		// TODO change to random int
 		int goal = 5;
 
 		// Test program
