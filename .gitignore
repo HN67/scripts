@@ -1,5 +1,6 @@
+# Local vscode settings
+.vscode/
+
 # Ignore pycache of custom modules
 __pycache__/
-
-# Ignore compiled java classes
-*.class
+.mypy_cache/
