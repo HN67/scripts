@@ -1,4 +1,3 @@
-# scripts
-Collection of various small scripts, mostly Python
+# Scripts
 
-Random little projects that are not large enough to need their own folder
+Collection of small scripts that do not belong to a larger project.
