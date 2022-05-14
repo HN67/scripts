@@ -5,7 +5,6 @@ Especially, the distribution of the sum of independent dice values.
 
 import collections
 import collections.abc as c
-import fractions
 import itertools
 import math
 import operator
@@ -53,8 +52,7 @@ def display_probability(
     distribution: c.Mapping[int, float],
     *,
     mark: str = ": ",
-    # precision: int = 2,
-    denominator: int = 1000000,
+    precision: int = 4,
     sep: str = "\n",
 ) -> str:
     """Format a probability distribution in ascending value order.
@@ -67,8 +65,7 @@ def display_probability(
     return sep.join(
         # format the value, the given mark, and then the probability appropriately rounded
         # e.g. 1: 1/6
-        f"{value}{mark}{fractions.Fraction(chance).limit_denominator(denominator)}"
-        # {chance:.{precision}f} for decimal display
+        f"{value}{mark}{chance:.{precision}f}"
         # sort the distribution items by the value
         for value, chance in sorted(distribution.items(), key=operator.itemgetter(0))
     )
