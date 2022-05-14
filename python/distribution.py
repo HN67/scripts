@@ -69,3 +69,13 @@ def display_probability(
         # sort the distribution items by the value
         for value, chance in sorted(distribution.items(), key=operator.itemgetter(0))
     )
+
+
+def higher_probability(distribution: c.Mapping[int, float]) -> c.Mapping[int, float]:
+    """Produces the distribution of getting a number or higher."""
+    # extract the values and probabilities maintaining order
+    # sort in descending order so we can just accumulate the probabilities
+    values = sorted(distribution.keys(), reverse=True)
+    chances = (distribution[value] for value in values)
+    totals = itertools.accumulate(chances)
+    return dict(zip(values, totals))
